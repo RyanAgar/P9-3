@@ -1,4 +1,10 @@
 import os
+import kagglehub
+
+def download_spamassassin():
+    path = kagglehub.dataset_download("beatoa/spamassassin-public-corpus")
+    print("Downloaded dataset to:", path)
+    return path
 
 def load_dataset(path):
     emails = []

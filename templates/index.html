@@ -10,7 +10,9 @@
         <button type="submit">Check</button>
     </form>
     {% if result %}
-        <h2>Result: {{ result }}</h2>
+    <h2>Result: {{ result }}</h2>
+    <p>Risk Score: {{ score }}/10</p>
     {% endif %}
+
 </body>
 </html>

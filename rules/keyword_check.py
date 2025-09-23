@@ -1,4 +1,3 @@
-# rules/keyword_check.py
 # -----------------------------------------------------------
 # This file checks for suspicious words in an email.
 # Idea:

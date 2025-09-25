@@ -9,4 +9,6 @@ pip install -r requirements.txt
 ## Usage
 ```
 python app.py
+python dataset_loader.py (load dataset for evaluation)
+python evaluate_dataset.py (to evaluate datset loaded earlier)
 ```

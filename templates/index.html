@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <html>
 <head>
     <title>Phish Guardian</title>
@@ -7,7 +8,10 @@
     <h1>Phish Guardian</h1>
     <form method="POST">
         <textarea name="email_content" rows="15" cols="80" placeholder="Paste raw email here"></textarea><br>
+        <div class="button-wrapper">
         <button type="submit">Check</button>
+        </div>
+
     </form>
     {% if result %}
     <h2>Result: {{ result }}</h2>

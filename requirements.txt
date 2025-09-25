@@ -1,2 +1,6 @@
 flask
 email
+re
+difflib
+urllib
+typing

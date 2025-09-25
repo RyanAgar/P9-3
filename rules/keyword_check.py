@@ -87,30 +87,3 @@ def keyword_score(subject: str, body: str) -> float:
 
     max_possible = len(SUSPICIOUS_KEYWORDS) * _MAX_PER_KEYWORD
     return round((score / max_possible) * 100, 2)
-
-
-def keyword_breakdown(subject: str, body: str) -> Dict[str, Any]:
-    """
-    Extra helper: shows exactly how each keyword contributed to the score.
-    Example output:
-    {
-        "urgent": {"subject": 3, "body": 0, "early_bonus": 0, "total": 3},
-        "password": {"subject": 0, "body": 1, "early_bonus": 1, "total": 2}
-    }
-    Useful for debugging or showing users WHY an email was flagged.
-    """
-    subject = subject or ""
-    body = body or ""
-    breakdown = {}
-    for kw in SUSPICIOUS_KEYWORDS:
-        pattern = _regex_for_kw(kw)
-        s = _subject_points(subject, pattern)
-        b, bonus = _body_points(body, pattern)
-        if s or b or bonus:
-            breakdown[kw] = {
-                "subject": s,
-                "body": b,
-                "early_bonus": bonus,
-                "total": s + b + bonus,
-            }
-    return breakdown

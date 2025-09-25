@@ -1,5 +1,5 @@
-# rules/whitelist.py
-# Simple domain whitelist check
+#Simple domain whitelist check
+#Helps reduce false positives by trusting known safe domains
 
 SAFE_DOMAINS = {
     # Tech giants
@@ -30,7 +30,7 @@ SAFE_DOMAINS = {
     "gov.uk"
 }
 
-def whitelist_check(sender: str) -> int:
+def whitelist_check(sender: str) -> int: #Main function that takes the sender’s email address
     """
     Check if the sender’s email is from a trusted (safe) company.
     

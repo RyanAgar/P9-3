@@ -1,6 +1,2 @@
 flask
-email
-re
-difflib
-urllib
-typing
+kagglehub

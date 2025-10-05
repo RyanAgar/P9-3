@@ -36,7 +36,7 @@ def index():
             ml_score = model.predict_proba(X)[0][phishing_index]
 
         # Hybrid score (simple average)
-        hybrid_score = round((rule_score + ml_score * 10) / 2, 2)
+        hybrid_score = (rule_score * 2 + ml_score) / 3
         score = hybrid_score  # Displayed as main score
 
     return render_template(

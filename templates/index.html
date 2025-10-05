@@ -14,13 +14,13 @@
 
     </form>
     {% if result %}
-<h2 class="{% if result == 'Phishing' %}result-phishing{% else %}result-legit{% endif %}">Result: {{ result }}</h2>
-<p>Risk Score: {{ score }}/10</p>
+<h2 class="result-{{ result|lower }}">Result: {{ result }}</h2>
+<p><strong>Risk Score:</strong> {{ score | round(1) }}/10</p>
 <div class="score-results">
     <h3>Scoring Breakdown</h3>
     <p><strong>Rule-Based Score:</strong> {{ rule_score }}</p>
     <p><strong>ML Score:</strong> {{ ml_score }}</p>
-    <p><strong>Hybrid Score:</strong> {{ hybrid_score }}</p>
+    <p><strong>Hybrid Score:</strong> {{ hybrid_score | round(1) }}</p>
 </div>
 {% endif %}
 

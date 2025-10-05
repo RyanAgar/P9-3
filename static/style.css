@@ -166,11 +166,11 @@ footer {
 }
 
 .result-phishing {
-    color: #d32f2f; /* deep red */
+    color: #d32f2f;
     font-weight: bold;
 }
 
-.result-legit {
-    color: #388e3c; /* deep green */
+.result-safe {
+    color: #388e3c;
     font-weight: bold;
 }

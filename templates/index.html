@@ -14,7 +14,7 @@
 
     </form>
     {% if result %}
-<h2>Result: {{ result }}</h2>
+<h2 class="{% if result == 'Phishing' %}result-phishing{% else %}result-legit{% endif %}">Result: {{ result }}</h2>
 <p>Risk Score: {{ score }}/10</p>
 <div class="score-results">
     <h3>Scoring Breakdown</h3>

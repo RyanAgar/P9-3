@@ -1,10 +1,6 @@
-import joblib
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-#- Ensures Python can import modules from the parent directory (like utils/).
-#joblib is used to save and load large Python objects efficiently (like ML models).
-
+import joblib #joblib is used to save and load large Python objects efficiently (like ML models).
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) #- Ensures Python can import modules from the parent directory (like utils/).
 from utils.dataset_loader import download_spamassassin, load_dataset
 from sklearn.ensemble import RandomForestClassifier
 from ml.feature_extractor import extract_features

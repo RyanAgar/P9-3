@@ -6,48 +6,58 @@ def download_spamassassin():
     raw_path = kagglehub.dataset_download("beatoa/spamassassin-public-corpus")
     print("Downloaded dataset to:", raw_path)
 
-    # Look for the parent folder that contains easy_ham, hard_ham, spam_2
+    # Look for the parent folder that contains easy_ham, hard_ham, spam
     for root, dirs, files in os.walk(raw_path):
-        if all(d in dirs for d in ["easy_ham", "hard_ham", "spam_2"]):
+        if all(d in dirs for d in ["easy_ham", "hard_ham", "spam"]):
             print("Found dataset root:", root)
             return root
 
-    raise FileNotFoundError("Could not locate top-level 'easy_ham', 'hard_ham', and 'spam_2' folders")
+    raise FileNotFoundError("Could not locate top-level 'easy_ham', 'hard_ham', and 'spam' folders")
 
 
 def load_dataset(path):
     emails = []
     labels = []
 
-    def load_folder(folder_path, label):
-        for filename in os.listdir(folder_path):
-            if filename.startswith("__MACOSX"):
-                continue  # Skip system folders
+    def load_email(file_path):
+        try:
+            with open(file_path, "r", encoding="latin-1") as f:
+                return f.read()
+        except Exception as e:
+            print(f"Skipped {file_path}: {e}")
+            return None
 
-            file_path = os.path.join(folder_path, filename)
-            if not os.path.isfile(file_path):
-                continue  # Skip directories or non-files
-            try:
-                with open(file_path, "r", encoding="latin-1") as f:
-                    emails.append(f.read())
-                    labels.append(label)
-            except Exception as e:
-                print(f"Skipped {filename}: {e}")
+    ham_dirs = ["easy_ham", "easy_ham_2", "ham"]
+    spam_dirs = ["spam", "spam_2"]
 
-    # Load spam
-    spam_folder = os.path.join(path, "spam_2", "spam_2")
-    load_folder(spam_folder, "spam")
+    for d in ham_dirs:
+        dir_path = os.path.join(path, d)
+        if not os.path.exists(dir_path):
+            continue
+        for file in os.listdir(dir_path):
+            file_path = os.path.join(dir_path, file)
+            if os.path.isfile(file_path):
+                email = load_email(file_path)
+                if email:
+                    emails.append(email)
+                    labels.append("ham")
 
+    for d in spam_dirs:
+        dir_path = os.path.join(path, d)
+        if not os.path.exists(dir_path):
+            continue
+        for file in os.listdir(dir_path):
+            file_path = os.path.join(dir_path, file)
+            if os.path.isfile(file_path):
+                email = load_email(file_path)
+                if email:
+                    emails.append(email)
+                    labels.append("phishing")
 
-    # Load ham variants
-    for ham_type in ["easy_ham", "hard_ham"]:
-        ham_folder = os.path.join(path, ham_type, ham_type)
-    if os.path.exists(ham_folder):
-        load_folder(ham_folder, "ham")
-
+    from collections import Counter
+    print("Label distribution:", Counter(labels))
 
     return emails, labels
-
 if __name__ == "__main__":
     path = download_spamassassin()
     emails, labels = load_dataset(path)

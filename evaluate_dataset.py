@@ -1,25 +1,28 @@
+import joblib
 from utils.dataset_loader import download_spamassassin, load_dataset
-from utils.email_parser import parse_email
-from rules.scorer import final_score
+from ml.feature_extractor import extract_features
 
-def evaluate(path):
+def evaluate_model():
+    # Load trained model and vectorizer
+    model, vectorizer = joblib.load("ml/phishing_model.pkl")
+
+    # Load dataset
+    path = download_spamassassin()
     emails, labels = load_dataset(path)
-    correct = 0
-    total = len(emails)
 
-    for email, label in zip(emails, labels):
-        sender, subject, body, urls = parse_email(email)
-        prediction = final_score(sender, subject, body, urls)
-        predicted_label, score = final_score(sender, subject, body, urls)
-        predicted_label = predicted_label.lower()
-        true_label = "spam" if label == "spam" else "safe"
+    # Extract features
+    feature_dicts = [extract_features(email) for email in emails]
+    X = vectorizer.transform(feature_dicts)
 
-        if predicted_label == true_label:
-            correct += 1
+    # Predict
+    predictions = model.predict(X)
 
-    accuracy = correct / total
+    # Evaluate
+    correct = sum(p == y for p, y in zip(predictions, labels))
+    total = len(labels)
+    accuracy = correct / total if total > 0 else 0
+
     print(f"Accuracy: {accuracy:.2f} ({correct}/{total})")
 
 if __name__ == "__main__":
-    path = download_spamassassin()
-    evaluate(path)
+    evaluate_model()

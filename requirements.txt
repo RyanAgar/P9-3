@@ -1,2 +1,4 @@
 flask
 kagglehub
+joblib
+scikit-learn

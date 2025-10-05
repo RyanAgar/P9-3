@@ -42,6 +42,7 @@ body {
 }
 
 
+
 /* Header styles */
 h1 {
     font-size: 2em;
@@ -125,6 +126,7 @@ button:hover {
     color: #ffffff;
 }
 
+
 /* Table styling */
 table {
     width: 100%;
@@ -161,4 +163,14 @@ footer {
     text-align: center;
     font-size: 0.9em;
     color: #888;
+}
+
+.result-phishing {
+    color: #d32f2f; /* deep red */
+    font-weight: bold;
+}
+
+.result-legit {
+    color: #388e3c; /* deep green */
+    font-weight: bold;
 }

@@ -18,3 +18,7 @@ def parse_email(raw_email):
     
     urls = re.findall(r'(https?://\S+)', body)
     return sender, subject, body, urls
+
+def extract_sender_domain(email):
+    match = re.search(r'From:.*?@([\w\.-]+)', email)
+    return match.group(1) if match else 'unknown'

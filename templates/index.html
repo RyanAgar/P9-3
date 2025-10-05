@@ -14,9 +14,16 @@
 
     </form>
     {% if result %}
-    <h2>Result: {{ result }}</h2>
-    <p>Risk Score: {{ score }}/10</p>
-    {% endif %}
+<h2>Result: {{ result }}</h2>
+<p>Risk Score: {{ score }}/10</p>
+<div class="score-results">
+    <h3>Scoring Breakdown</h3>
+    <p><strong>Rule-Based Score:</strong> {{ rule_score }}</p>
+    <p><strong>ML Score:</strong> {{ ml_score }}</p>
+    <p><strong>Hybrid Score:</strong> {{ hybrid_score }}</p>
+</div>
+{% endif %}
+
 
 </body>
 </html>

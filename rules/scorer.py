@@ -2,6 +2,7 @@ from .whitelist import whitelist_check
 from .keyword_check import keyword_score
 from .edit_distance import domain_similarity
 from .url_check import suspicious_url_score
+from utils.email_parser import parse_email
 
 
 #This function pulls together the outputs from all rule modules and produces a final risk label and score
@@ -16,5 +17,11 @@ def final_score(sender, subject, body, urls): #Main function that takes parsed e
         score *= 0.5  
 
     label = "Phishing" if score >= 5 else "Safe" #Threshold: score ≥ 5 → flagged as phishing
+   
     return label, min(score, 10)  # Cap score at 10, returns both label and score
+
+def rule_based_score(email):
+    sender, subject, body, urls = parse_email(email)
+    _, score = final_score(sender, subject, body, urls)
+    return score / 10  # Normalize to 0–1 for ML blending
 

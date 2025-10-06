@@ -1,50 +1,53 @@
 import difflib
+from typing import Set
 
-#List of whitelisted domains
-LEGIT_DOMAINS = ["microsoft.com",
-    "google.com",
-    "paypal.com",
-    "apple.com",
-    "amazon.com",
-    "github.com",
-    "linkedin.com",
-    "dropbox.com",
-    "zoom.us",
-    "outlook.com",
-    "stripe.com",
-    "bankofamerica.com",
-    "chase.com",
-    "hsbc.com",
-    "citibank.com",
-    "ocbc.com",
-    "dbs.com",
-    "uob.com.sg",
-    "gov.sg",
-    "ntu.edu.sg",
-    "nus.edu.sg",
-    "safeguard.com",
-    "adobe.com",
-    "cloudflare.com",
-    "intel.com",
-    "samsung.com",
-    "netflix.com",
-    "spotify.com",
-    "slack.com",
-    "airbnb.com",
-    "uber.com",
-    "grab.com",
-    "lazada.sg",
-    "shopee.sg"
-]
+# -------------------------------------------------------------------
+# ⚠️ IMPORT: Get the master domain list from whitelist.py
+from .whitelist import SAFE_DOMAINS 
+# -------------------------------------------------------------------
+
+# --- Helper Function (Replicated for self-contained module logic) ---
+def _get_root_domain(host: str) -> str:
+    """
+    Extracts the eTLD+1 (the root domain, e.g., mail.google.com -> google.com).
+    This handles common multi-part TLDs like co.uk or com.sg.
+    """
+    parts = host.split(".")
+    if len(parts) < 2:
+        return host
+    # Handle common two-part TLDs like co.uk or com.sg
+    if len(parts) >= 3 and parts[-2] + "." + parts[-1] in {"co.uk", "com.sg", "com.au", "com.my"}:
+        return ".".join(parts[-3:])
+    return ".".join(parts[-2:])
 
 #This function checks whether the sender's domain is suspiciously similar to a known legitimate domain — even if it's not an exact match
-def domain_similarity(sender):
-    #Extracts the domain part of the sender's email (e.g., support@micros0ft.com → micros0ft.com) and then converts it to lowercase
-    #for consistent comparison
-    domain = sender.split("@")[-1].lower()  
-    #Compares the sender's domain to every white listed domain, using difflib.SequenceMatcher to compute a similarity ratio (0 to 1)
-    #Finds the highest similarity score among all legit domains
-    max_ratio = max(difflib.SequenceMatcher(None, domain, legit).ratio() for legit in LEGIT_DOMAINS) 
-    #If the domain is not in the legit list, but is very similar to one eg. (similarity > 0.8), it returns a score of 2
-    #Otherwise, it returns 0
-    return 2 if max_ratio > 0.8 and domain not in LEGIT_DOMAINS else 0
+def domain_similarity(sender: str) -> int:
+    """
+    Performs a similarity check (typosquatting detection) focused on the 
+    root domain against the master SAFE_DOMAINS list.
+    
+    Returns: 0 (safe) or 2 (suspiciously similar).
+    """
+    #Extracts the domain part of the sender's email 
+    if "@" not in sender:
+        return 0 # Cannot process
+
+    domain = sender.split("@")[-1].lower().strip()
+    
+    # 1. Get the ROOT domain to check for similarity (e.g., mail.micros0ft.com -> micros0ft.com)
+    root_domain = _get_root_domain(domain)
+    
+    # 2. Skip if domain is too short or is ALREADY EXACTLY whitelisted
+    if len(root_domain) < 5 or root_domain in SAFE_DOMAINS:
+        return 0
+
+    # 3. Checks similarity ratio against all target domains
+    # We check the suspicious ROOT domain against the SAFE_DOMAINS list
+    for target in SAFE_DOMAINS: 
+        s = difflib.SequenceMatcher(None, root_domain, target)
+        
+        # If similarity is high (0.8 or greater), it's a strong indicator of spoofing
+        if s.ratio() >= 0.8: 
+            return 2 # High-risk score added (for typosquatting like 'micros0ft.com')
+            
+    return 0 # No significant similarity detected

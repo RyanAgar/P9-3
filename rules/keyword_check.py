@@ -1,7 +1,7 @@
 # -----------------------------------------------------------
 # This file checks for suspicious words in an email.
 # Idea:
-#   - Certain words like "urgent" or "password" often show up in scams.
+#   - Certain words like "urgent" or "password" often appear in scams.
 #   - If they are in the SUBJECT line, they are extra suspicious.
 #   - If they are in the BODY, they still matter, but less.
 #   - If they appear right at the START of the body, we treat it as even riskier.
@@ -10,71 +10,35 @@
 # -----------------------------------------------------------
 
 import re
-from typing import Tuple, Dict, Any
+from pathlib import Path
 
-# List of “red-flag” words and phrases attackers commonly use.
-SUSPICIOUS_KEYWORDS = [
-    # Urgency
-    "urgent", "immediately", "important", "attention", "asap",
-    # Verification / Login
-    "verify", "update", "login", "sign in", "authenticate",
-    # Account / Security
-    "account", "password", "credentials", "secure", "suspended", "locked",
-    # Financial / Payment
-    "payment", "invoice", "transaction", "credit card", "bank",
-    # Links
-    "click", "link", "http", "https",
-    # Security & Account Threats
-    "account suspended",
-    "unauthorized login",
-    "verify your identity",
-    "your account has been locked",
-    "security alert",
-    "unusual activity detected",
-    "confirm your password",
-    "update billing information",
-    "login required",
-    "secure your account",
-    # Financial Bait & Urgency
-    "claim your prize",
-    "you’ve won",
-    "limited-time offer",
-    "urgent action required",
-    "act now",
-    "act fast",
-    "reward",
-    "cash bonus",
-    "exclusive deal",
-    "click here to claim",
-    "final notice",
-    # Social Engineering & Impersonation
-    "important message from HR",
-    "invoice attached",
-    "payment overdue",
-    "reset your credentials",
-    "document review required",
-    "confidential message",
-    "internal memo",
-    "IT department request",
-    "CEO request",
-    "wire transfer",
-    # Suspicious Link Language
-    "login here",
-    "verify now",
-    "secure portal",
-    "click to unlock",
-    "access your account",
-    "update now",
-    "download attachment",
-    "open document"
+#Load keywords.txt into a list
+def load_keywords(path: str) -> list[str]:
+    seen = set()
+    keyword_list = []
 
-]
+    with open(path, "r", encoding="utf-8") as file:
+        for line in file:
+            line = line.strip()
+            if not line or line.startswith("#"): #Skip comments and empty lines
+                continue
+            keyword = " ".join(line.split())
+
+            if keyword.lower() in seen: #Prevent duplication by checking with set object O(1)
+                continue
+            seen.add(keyword.lower())
+
+            keyword_list.append(keyword)
+    return keyword_list
+
+KEYWORDS_PATH = Path(__file__).parent / "keywords.txt"
+SUSPICIOUS_KEYWORDS = load_keywords(KEYWORDS_PATH)
 
 # Scoring rules:
 # - Subject hit = 3 points
 # - Body hit = 1 point
 # - Bonus if word appears in first 200 chars of body = +1 point
-# Max = 5 points per keyword → makes it easy to convert to %
+# Max = 5 points per keyword -> makes it easy to convert to %
 _MAX_PER_KEYWORD = 6
 _EARLY_WINDOW = 200  # we call "early" = first 200 characters of the email body
 
@@ -85,25 +49,27 @@ def _regex_for_kw(kw: str) -> re.Pattern:
     - If keyword is 'bank', only match the whole word 'bank'
       (not 'banking' or 'snowbank').
     - If keyword is 'sign in', match that full phrase.
-    - Ignore upper/lowercase → 'BANK', 'Bank', 'bank' all match.
+    - Ignore upper/lowercase -> 'BANK', 'Bank', 'bank' all match.
     """
     return re.compile(rf"\b{re.escape(kw)}\b", re.IGNORECASE)
 
 
 def _subject_points(subject: str, kw_pat: re.Pattern) -> int:
-    """
-    Give 3 points if keyword is found in the subject.
-    """
+    """Return 3 if kw_pat matches subject, else return 0."""
+    if not subject:
+        return 0
     return 3 if kw_pat.search(subject) else 0
 
 
-def _body_points(body: str, kw_pat: re.Pattern) -> Tuple[int, int]:
+def _body_points(body: str, kw_pat: re.Pattern) -> tuple[int, int]:
     """
     Check if keyword is in the body.
     - Always gives 1 point if found.
     - Gives +1 extra if it shows up very early (first 200 chars).
-    Returns a pair (normal_points, early_bonus).
+    - Returns tuple of int (normal_points, early_bonus).
     """
+    if not body:
+        return 0, 0
     match = kw_pat.search(body)
     if not match:
         return 0, 0
@@ -114,11 +80,12 @@ def _body_points(body: str, kw_pat: re.Pattern) -> Tuple[int, int]:
 
 def keyword_score(subject: str, body: str) -> float:
     """
-    Main function: calculate overall keyword risk as a percentage (0–100).
+    Calculate overall keyword risk as a percentage (0-100%).
     - Goes through every suspicious word.
     - Adds points from subject + body + early bonus.
     - Normalizes against max possible points for fairness.
     """
+    #Ensure subject and body are strings
     subject = subject or ""
     body = body or ""
 
@@ -130,4 +97,4 @@ def keyword_score(subject: str, body: str) -> float:
         score += body_pts + bonus
 
     max_possible = len(SUSPICIOUS_KEYWORDS) * _MAX_PER_KEYWORD
-    return round((score / max_possible) * 100, 2)
+    return round((score / max_possible) * 100, 2) #score in percentage

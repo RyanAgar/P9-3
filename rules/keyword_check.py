@@ -24,6 +24,50 @@ SUSPICIOUS_KEYWORDS = [
     "payment", "invoice", "transaction", "credit card", "bank",
     # Links
     "click", "link", "http", "https",
+    # Security & Account Threats
+    "account suspended",
+    "unauthorized login",
+    "verify your identity",
+    "your account has been locked",
+    "security alert",
+    "unusual activity detected",
+    "confirm your password",
+    "update billing information",
+    "login required",
+    "secure your account",
+    # Financial Bait & Urgency
+    "claim your prize",
+    "you’ve won",
+    "limited-time offer",
+    "urgent action required",
+    "act now",
+    "act fast",
+    "reward",
+    "cash bonus",
+    "exclusive deal",
+    "click here to claim",
+    "final notice",
+    # Social Engineering & Impersonation
+    "important message from HR",
+    "invoice attached",
+    "payment overdue",
+    "reset your credentials",
+    "document review required",
+    "confidential message",
+    "internal memo",
+    "IT department request",
+    "CEO request",
+    "wire transfer",
+    # Suspicious Link Language
+    "login here",
+    "verify now",
+    "secure portal",
+    "click to unlock",
+    "access your account",
+    "update now",
+    "download attachment",
+    "open document"
+
 ]
 
 # Scoring rules:
@@ -31,7 +75,7 @@ SUSPICIOUS_KEYWORDS = [
 # - Body hit = 1 point
 # - Bonus if word appears in first 200 chars of body = +1 point
 # Max = 5 points per keyword → makes it easy to convert to %
-_MAX_PER_KEYWORD = 5
+_MAX_PER_KEYWORD = 6
 _EARLY_WINDOW = 200  # we call "early" = first 200 characters of the email body
 
 
@@ -64,7 +108,7 @@ def _body_points(body: str, kw_pat: re.Pattern) -> Tuple[int, int]:
     if not match:
         return 0, 0
     body_points = 1
-    early_bonus = 1 if match.start() < _EARLY_WINDOW else 0
+    early_bonus = 2 if match.start() < _EARLY_WINDOW else 0
     return body_points, early_bonus
 
 

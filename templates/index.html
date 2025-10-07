@@ -20,7 +20,14 @@
     <h3>Scoring Breakdown</h3>
     <p><strong>Rule-Based Score:</strong> {{ rule_score }}</p>
     <p><strong>ML Score:</strong> {{ ml_score }}</p>
-    <p><strong>Hybrid Score:</strong> {{ hybrid_score | round(1) }}</p>
+    <p>
+        <strong>Hybrid Score:</strong> {{ hybrid_score | round(1) }}
+        <span class="i-icon" tabindex="0" data-tip="The hybrid score is calculated based on the weightage of the Rule-Based Score(60%) & ML Score(40%).">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm.75 6.5a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0zM11 11h2v6h-2v-6z"/>
+            </svg>
+        </span>
+    </p>
 </div>
 {% endif %}
 

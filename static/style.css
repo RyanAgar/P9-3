@@ -174,3 +174,16 @@ footer {
     color: #388e3c;
     font-weight: bold;
 }
+
+/* Tooltip Icon */
+.i-icon{display:inline-block;vertical-align:text-bottom;cursor:help}
+.i-icon svg{width:1em;height:1em;fill:currentColor}
+.i-icon[data-tip]::after{
+  content:attr(data-tip);
+  position:absolute;
+  white-space:nowrap;
+  background:#111;color:#fff;padding:.35rem .5rem;border-radius:4px;font-size:.85rem;
+  transform:translate(-50%, -8px);left:50%;bottom:100%;opacity:0;pointer-events:none;transition:opacity .12s;
+}
+.i-icon:hover::after,.i-icon:focus::after{opacity:1;pointer-events:auto}
+.i-icon{position:relative}

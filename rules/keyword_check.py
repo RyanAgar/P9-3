@@ -1,133 +1,95 @@
-# -----------------------------------------------------------
-# This file checks for suspicious words in an email.
-# Idea:
-#   - Certain words like "urgent" or "password" often show up in scams.
-#   - If they are in the SUBJECT line, they are extra suspicious.
-#   - If they are in the BODY, they still matter, but less.
-#   - If they appear right at the START of the body, we treat it as even riskier.
-# Each word can give at most 5 points total.
-# In the end, we turn the total into a percentage (0–100%).
-# -----------------------------------------------------------
-
 import re
-from typing import Tuple, Dict, Any
+from typing import List, Pattern, Tuple
 
-# List of “red-flag” words and phrases attackers commonly use.
-SUSPICIOUS_KEYWORDS = [
-    # Urgency
-    "urgent", "immediately", "important", "attention", "asap",
-    # Verification / Login
-    "verify", "update", "login", "sign in", "authenticate",
-    # Account / Security
-    "account", "password", "credentials", "secure", "suspended", "locked",
-    # Financial / Payment
-    "payment", "invoice", "transaction", "credit card", "bank",
-    # Links
-    "click", "link", "http", "https",
-    # Security & Account Threats
-    "account suspended",
-    "unauthorized login",
-    "verify your identity",
-    "your account has been locked",
-    "security alert",
-    "unusual activity detected",
-    "confirm your password",
-    "update billing information",
-    "login required",
-    "secure your account",
-    # Financial Bait & Urgency
-    "claim your prize",
-    "you’ve won",
-    "limited-time offer",
-    "urgent action required",
-    "act now",
-    "act fast",
-    "reward",
-    "cash bonus",
-    "exclusive deal",
-    "click here to claim",
-    "final notice",
-    # Social Engineering & Impersonation
-    "important message from HR",
-    "invoice attached",
-    "payment overdue",
-    "reset your credentials",
-    "document review required",
-    "confidential message",
-    "internal memo",
-    "IT department request",
-    "CEO request",
-    "wire transfer",
-    # Suspicious Link Language
-    "login here",
-    "verify now",
-    "secure portal",
-    "click to unlock",
-    "access your account",
-    "update now",
-    "download attachment",
-    "open document"
+# --- Configuration ---
+_EARLY_WINDOW = 200 # Character count for the "early bonus"
+_PATTERN_CACHE: dict = {}
 
+# --- 1. THE SUSPICIOUS KEYWORD LIST (SG Focus) ---
+# NOTE: The structural refactoring to load from 'keywords.txt' is now removed
+# to prioritize the functional code used in the report documentation.
+SUSPICIOUS_KEYWORDS: List[str] = [
+    # Urgency and Threat
+    "URGENT", "FINAL NOTICE", "immediately", "4 hours", "24 hours", "forfeiture", 
+    "warning", "security alert", "suspended", "locked", "deactivated", "cancel",
+    
+    # Financial and Authentication
+    "unauthorized login", "re-activate", "verify", "authenticate", "credentials", 
+    "bank account", "transaction", "payment", "invoice", "wire transfer", 
+    "secure login", "password", 
+    
+    # Regional / Government (High Risk)
+    "CPF contribution", "SingPass", "HDB", "ICA", 
+    
+    # Institution Names
+    "DBS", "PayLah!", "OCBC", "UOB", "MAS", "SquireT"
 ]
 
-# Scoring rules:
-# - Subject hit = 3 points
-# - Body hit = 1 point
-# - Bonus if word appears in first 200 chars of body = +1 point
-# Max = 5 points per keyword → makes it easy to convert to %
-_MAX_PER_KEYWORD = 6
-_EARLY_WINDOW = 200  # we call "early" = first 200 characters of the email body
+# Scoring rules (as per old config before structural change):
+# - Subject hit = 5 points
+# - Body hit = 2 points
+# - Early bonus = +1 point
+# Max = 8 points per keyword. We'll use the original max of 5.0 for normalization simplicity.
+
+# --- 2. HELPER FUNCTIONS ---
+
+def _get_pattern(word: str) -> Pattern[str]:
+    """Caches compiled regex patterns for speed."""
+    if word not in _PATTERN_CACHE:
+        # Compiles the word to match as a whole word, case-insensitive
+        _PATTERN_CACHE[word] = re.compile(r'\b' + re.escape(word) + r'\b', re.IGNORECASE)
+    return _PATTERN_CACHE[word]
 
 
-def _regex_for_kw(kw: str) -> re.Pattern:
-    """
-    Build a search pattern for each keyword.
-    - If keyword is 'bank', only match the whole word 'bank'
-      (not 'banking' or 'snowbank').
-    - If keyword is 'sign in', match that full phrase.
-    - Ignore upper/lowercase → 'BANK', 'Bank', 'bank' all match.
-    """
-    return re.compile(rf"\b{re.escape(kw)}\b", re.IGNORECASE)
+def _subject_points(subject: str, kw_pat: Pattern[str]) -> float:
+    """Adds 5 points for a keyword hit in the subject (high impact)."""
+    if kw_pat.search(subject):
+        return 5.0
+    return 0.0
 
 
-def _subject_points(subject: str, kw_pat: re.Pattern) -> int:
-    """
-    Give 3 points if keyword is found in the subject.
-    """
-    return 3 if kw_pat.search(subject) else 0
-
-
-def _body_points(body: str, kw_pat: re.Pattern) -> Tuple[int, int]:
-    """
-    Check if keyword is in the body.
-    - Always gives 1 point if found.
-    - Gives +1 extra if it shows up very early (first 200 chars).
-    Returns a pair (normal_points, early_bonus).
-    """
+def _body_points(body: str, kw_pat: Pattern[str]) -> Tuple[float, float]:
+    """Adds 2 points for a body hit, plus an early bonus."""
+    points = 0.0
+    bonus = 0.0
     match = kw_pat.search(body)
-    if not match:
-        return 0, 0
-    body_points = 1
-    early_bonus = 2 if match.start() < _EARLY_WINDOW else 0
-    return body_points, early_bonus
+    
+    if match:
+        points = 2.0
+        # Check for early bonus (appears in the first 200 characters)
+        if match.start() < _EARLY_WINDOW:
+            bonus = 1.0
+            
+    return points, bonus
 
+# --- 3. MAIN SCORING FUNCTION ---
+
+# Maximum points are calculated based on the number of keywords and the maximum points per keyword (5.0).
+MAX_POINTS = len(SUSPICIOUS_KEYWORDS) * 5.0 
 
 def keyword_score(subject: str, body: str) -> float:
     """
-    Main function: calculate overall keyword risk as a percentage (0–100).
-    - Goes through every suspicious word.
-    - Adds points from subject + body + early bonus.
-    - Normalizes against max possible points for fairness.
+    Calculates overall keyword risk and normalizes the final score to a 0.0–10.0 scale.
     """
+    #Ensure subject and body are strings
     subject = subject or ""
     body = body or ""
+    total_score = 0.0
 
-    score = 0
+    global MAX_POINTS 
+    # Recalculate MAX_POINTS in case the SUSPICIOUS_KEYWORDS list was modified externally.
+    MAX_POINTS = len(SUSPICIOUS_KEYWORDS) * 5.0
+    if MAX_POINTS == 0:
+        return 0.0
+
     for kw in SUSPICIOUS_KEYWORDS:
-        pattern = _regex_for_kw(kw)
-        score += _subject_points(subject, pattern)
-        body_pts, bonus = _body_points(body, pattern)
-        score += body_pts + bonus
+        kw_pat = _get_pattern(kw)
+        
+        total_score += _subject_points(subject, kw_pat)
+        body_points, early_bonus = _body_points(body, kw_pat)
+        total_score += body_points + early_bonus
 
-    max_possible = len(SUSPICIOUS_KEYWORDS) * _MAX_PER_KEYWORD
-    return round((score / max_possible) * 100, 2)
+    # CRITICAL FIX: Normalize the calculated total to the 0.0 - 10.0 scale.
+    final_score_normalized = (total_score / MAX_POINTS) * 10.0
+    
+    return min(final_score_normalized, 10.0)
